@@ -149,6 +149,8 @@ if __name__ == "__main__":
             'haas.discovery': [
                 'nousagi = nousagi.discoverer:CLITestDiscoverer',
             ],
-            'nousagi.var_loaders': [],
+            'nousagi.var_loaders': [
+                'command = nousagi.plugins.var_loaders:CommandVarLoader',
+            ],
         },
     )

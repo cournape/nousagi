@@ -97,11 +97,9 @@ class YamlTestLoader(object):
         yaml structure.
 
         """
-        import jaguar
         loader = self._loader
 
         config = Config.from_dict(test_structure['config'], filename)
-        config.variables.update({"version": jaguar.__version__})
 
         cases = (
             create_test_case_for_case(filename, config, case)
