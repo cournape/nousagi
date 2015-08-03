@@ -1,4 +1,5 @@
 import string
+import subprocess
 
 from characteristic import Attribute, attributes
 
@@ -21,6 +22,7 @@ class PreRunCommand(object):
     Attribute("cmd", instance_of=str),
     Attribute("assertions", instance_of=list),
     Attribute("pre_runs", instance_of=list),
+    Attribute("variables", instance_of=dict),
 ])
 class Test(object):
     @classmethod
@@ -65,5 +67,17 @@ class Test(object):
 
         return cls(
             name=data["name"], cmd=data["cmd"], assertions=assertions,
-            pre_runs=pre_runs
+            pre_runs=pre_runs, variables=variables
         )
+
+    def run(self, case):
+        cmd = string.Template(self.cmd).substitute(**self.variables)
+
+        p = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            stdin=subprocess.PIPE, shell=True
+        )
+        stdout, stderr = p.communicate()
+
+        for assertion in self.assertions:
+            assertion.uphold(self.variables, case, stdout, stderr, p.returncode)

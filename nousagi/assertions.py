@@ -1,4 +1,3 @@
-import re
 import string
 
 from characteristic import Attribute, attributes
@@ -13,8 +12,8 @@ class Assertion(object):
     Attribute("expected", instance_of=int)
 ])
 class StatusAssertion(Assertion):
-    def uphold(self, actual):
-        return self.expected == actual
+    def uphold(self, variables, case, stdout, stderr, returncode):
+        case.assertEqual(self.expected, returncode)
 
 
 @attributes([
@@ -25,8 +24,9 @@ class OutputAssertion(Assertion):
     def render(self):
         return string.Template(self.expected).substitute(self.variables)
 
-    def uphold(self, actual):
-        return self.render() == actual
+    def uphold(self, variables, case, stdout, stderr, returncode):
+        output = "\n".join((stdout, stderr))
+        case.assertTrue(output.startswith(self.render()))
 
 
 @attributes([
@@ -37,8 +37,9 @@ class OutputStartswithAssertion(Assertion):
     def render(self):
         return string.Template(self.expected).substitute(self.variables)
 
-    def uphold(self, actual):
-        return actual.startswith(self.render())
+    def uphold(self, variables, case, stdout, stderr, returncode):
+        output = "\n".join((stdout, stderr))
+        case.assertTrue(output.startswith(self.render()))
 
 
 @attributes([
@@ -49,5 +50,6 @@ class RegexOutputAssertion(Assertion):
     def render(self):
         return string.Template(self.expected).substitute(self.variables)
 
-    def uphold(self, actual):
-        return re.compile(self.render()).search(actual.rstrip()) is not None
+    def uphold(self, variables, case, stdout, stderr, returncode):
+        output = "\n".join((stdout, stderr))
+        return case.assertRegexpMatches(output.rstrip(), self.render())
