@@ -151,6 +151,7 @@ if __name__ == "__main__":
             ],
             'nousagi.var_loaders': [
                 'command = nousagi.plugins.var_loaders:CommandVarLoader',
+                'executable = nousagi.plugins.var_loaders:ExecutableVarLoader',
             ],
         },
     )
