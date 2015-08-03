@@ -30,7 +30,7 @@ def create_test_case_for_case(filename, config, case):
         generated tests, in the same order as defined in the file.
 
     """
-    tests = [Test.from_json_dict(config.variables, spec) for spec in case['tests']]
+    tests = [Test.from_json_dict(config, spec) for spec in case['tests']]
     test_count = len(tests)
     class_dict = dict(
         ('test_{index:0>{test_count}}'.format(

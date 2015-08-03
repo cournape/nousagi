@@ -7,6 +7,7 @@ from characteristic import Attribute, attributes
 from .assertions import (
     OutputAssertion, OutputStartswithAssertion, RegexOutputAssertion, StatusAssertion
 )
+from config import Config
 from .pre_runs import (
     Command, Env, Mkdtemp, RegisterVariable, State, WriteFileFromTemplate
 )
@@ -18,11 +19,11 @@ from .pre_runs import (
     Attribute("assertions", instance_of=list),
     Attribute("pre_runs", instance_of=list),
     Attribute("post_runs", instance_of=list),
-    Attribute("variables", instance_of=dict),
+    Attribute("config", instance_of=Config),
 ])
 class Test(object):
     @classmethod
-    def from_json_dict(cls, variables, data):
+    def from_json_dict(cls, config, data):
         assertions = []
         pre_runs = []
         post_runs = []
@@ -57,41 +58,41 @@ class Test(object):
                     raise NotImplementedError(msg)
                 pre_runs.append(pre_run)
 
+        if "status" in data:
+            assertion = StatusAssertion(
+                variables=config.variables, expected=data["status"]
+            )
+            assertions.append(assertion)
+        if "output" in data:
+            assertion = OutputAssertion(
+                variables=config.variables, expected=data["output"]
+            )
+            assertions.append(assertion)
+
         if "assertions" in data:
             for assertion_data in data["assertions"]:
                 if assertion_data["type"] == "regex":
                     assertion = RegexOutputAssertion(
-                        variables=variables,
+                        variables=config.variables,
                         expected=assertion_data["expected"]
                     )
                     assertions.append(assertion)
                 elif assertion_data["type"] == "startswith":
                     assertion = OutputStartswithAssertion(
-                        variables=variables,
+                        variables=config.variables,
                         expected=assertion_data["expected"]
                     )
                     assertions.append(assertion)
                 else:
                     raise NotImplementedError()
 
-        if "status" in data:
-            assertion = StatusAssertion(
-                variables=variables, expected=data["status"]
-            )
-            assertions.append(assertion)
-        if "output" in data:
-            assertion = OutputAssertion(
-                variables=variables, expected=data["output"]
-            )
-            assertions.append(assertion)
-
         return cls(
             name=data["name"], cmd=data["cmd"], assertions=assertions,
-            pre_runs=pre_runs, post_runs=post_runs, variables=variables
+            pre_runs=pre_runs, post_runs=post_runs, config=config
         )
 
     def run(self, case):
-        state = State(variables=self.variables, environ=os.environ.copy())
+        state = State(variables=self.config.variables, environ=os.environ.copy())
 
         return_states = []
         for pre_run in self.pre_runs:
@@ -109,6 +110,8 @@ class Test(object):
 
     def _run_command(self, case, state):
         cmd = string.Template(self.cmd).substitute(**state.variables)
+        if self.config.coverage.is_enabled:
+            cmd = self.config.coverage.prefix + " " + cmd
 
         p = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
