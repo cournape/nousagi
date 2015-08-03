@@ -4,6 +4,7 @@ import unittest
 import six
 import yaml
 
+from .config import Config
 from .test import Test
 
 
@@ -19,7 +20,7 @@ def _create_test_method(test):
     return test_method
 
 
-def create_test_case_for_case(filename, variables, case):
+def create_test_case_for_case(filename, config, case):
     """Programatically generate ``TestCases`` from a test specification.
 
     Returns
@@ -29,7 +30,7 @@ def create_test_case_for_case(filename, variables, case):
         generated tests, in the same order as defined in the file.
 
     """
-    tests = [Test.from_json_dict(variables, spec) for spec in case['tests']]
+    tests = [Test.from_json_dict(config.variables, spec) for spec in case['tests']]
     test_count = len(tests)
     class_dict = dict(
         ('test_{index:0>{test_count}}'.format(
@@ -97,16 +98,13 @@ class YamlTestLoader(object):
 
         """
         import jaguar
-
         loader = self._loader
 
-        variables = {
-            "cmd": "jaguar",
-            "version": jaguar.__version__
-        }
+        config = Config.from_dict(test_structure['config'], filename)
+        config.variables.update({"version": jaguar.__version__})
 
         cases = (
-            create_test_case_for_case(filename, variables, case)
+            create_test_case_for_case(filename, config, case)
             for case in test_structure['cases']
         )
         tests = [loader.load_case(case) for case in cases]
