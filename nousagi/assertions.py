@@ -1,3 +1,4 @@
+import os.path
 import string
 
 from characteristic import Attribute, attributes
@@ -53,3 +54,28 @@ class RegexOutputAssertion(Assertion):
     def uphold(self, variables, case, stdout, stderr, returncode):
         output = "\n".join((stdout, stderr))
         return case.assertRegexpMatches(output.rstrip(), self.render().rstrip())
+
+
+@attributes([
+    Attribute("variables", instance_of=dict),
+    Attribute("path", instance_of=str),
+    Attribute("exists", instance_of=bool)
+])
+class FileExists(Assertion):
+    @classmethod
+    def from_json_dict(cls, variables, data):
+        return cls(
+            variables=variables, path=data["path"], exists=data["exists"]
+        )
+
+    def _render_path(self):
+        return string.Template(self.path).substitute(self.variables)
+
+    def uphold(self, variables, case, stdout, stderr, returncode):
+        path = self._render_path()
+        if self.exists:
+            msg = "File {0!r} does not exist".format(path)
+            case.assertTrue(os.path.exists(path), msg)
+        else:
+            msg = "File {0!r} exists".format(path)
+            case.assertFalse(os.path.exists(path), msg)

@@ -5,9 +5,10 @@ import subprocess
 from characteristic import Attribute, attributes
 
 from .assertions import (
-    OutputAssertion, OutputStartswithAssertion, RegexOutputAssertion, StatusAssertion
+    FileExists, OutputAssertion, OutputStartswithAssertion,
+    RegexOutputAssertion, StatusAssertion
 )
-from config import Config
+from .config import Config
 from .pre_runs import (
     Command, Env, Mkdtemp, RegisterVariable, State, WriteFileFromTemplate
 )
@@ -83,8 +84,14 @@ class Test(object):
                         expected=assertion_data["expected"]
                     )
                     assertions.append(assertion)
+                elif assertion_data["type"] == "file":
+                    assertion = FileExists.from_json_dict(
+                        config.variables, assertion_data
+                    )
+                    assertions.append(assertion)
                 else:
-                    raise NotImplementedError()
+                    msg = "Assertion type {0!r} not supported"
+                    raise NotImplementedError(msg.format(assertion_data["type"]))
 
         return cls(
             name=data["name"], cmd=data["cmd"], assertions=assertions,
