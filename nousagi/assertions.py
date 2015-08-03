@@ -52,4 +52,4 @@ class RegexOutputAssertion(Assertion):
 
     def uphold(self, variables, case, stdout, stderr, returncode):
         output = "\n".join((stdout, stderr))
-        return case.assertRegexpMatches(output.rstrip(), self.render())
+        return case.assertRegexpMatches(output.rstrip(), self.render().rstrip())

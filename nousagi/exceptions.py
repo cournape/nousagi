@@ -6,10 +6,6 @@ class YamlParseError(NousagiTestError):
     pass
 
 
-class JqCompileError(NousagiTestError):
-    pass
-
-
 class InvalidAssertionClass(NousagiTestError):
     pass
 
@@ -27,4 +23,8 @@ class InvalidVariableType(NousagiTestError):
 
 
 class VariableLoopError(NousagiTestError):
+    pass
+
+
+class InvalidRegistrationVariable(NousagiTestError):
     pass
