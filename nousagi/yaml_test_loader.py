@@ -5,6 +5,7 @@ import six
 import yaml
 
 from .config import Config
+from .pre_runs import MultiSteps, pre_run_factory_from_json_dict
 from .test import Test
 
 
@@ -20,7 +21,7 @@ def _create_test_method(test):
     return test_method
 
 
-def create_test_case_for_case(filename, config, case):
+def create_test_case_for_case(filename, config, case, pre_run_definitions):
     """Programatically generate ``TestCases`` from a test specification.
 
     Returns
@@ -30,7 +31,15 @@ def create_test_case_for_case(filename, config, case):
         generated tests, in the same order as defined in the file.
 
     """
-    tests = [Test.from_json_dict(config, spec) for spec in case['tests']]
+    pre_runs = [
+        pre_run_definitions[name]
+        for name in case.get('setup', [])
+    ]
+    post_runs = []
+    tests = [
+        Test.from_json_dict(config, spec, pre_runs, post_runs)
+        for spec in case['tests']
+    ]
     test_count = len(tests)
     class_dict = dict(
         ('test_{index:0>{test_count}}'.format(
@@ -68,6 +77,15 @@ def create_test_case_for_case(filename, config, case):
     return type(class_name, (unittest.TestCase,), class_dict)
 
 
+def create_pre_run_set(filename, config, pre_run_set):
+    pre_runs = [
+        pre_run_factory_from_json_dict(step)
+        for step in pre_run_set
+    ]
+
+    return MultiSteps(steps=pre_runs)
+
+
 class YamlTestLoader(object):
     """A test case generator, creating ``TestCase`` and ``TestSuite``
     instances from a single YAML file.
@@ -100,9 +118,16 @@ class YamlTestLoader(object):
         loader = self._loader
 
         config = Config.from_dict(test_structure['config'], filename)
+        pre_run_definitions = dict(
+            (name, create_pre_run_set(filename, config, pre_run_set))
+            for name, pre_run_set
+            in test_structure.get("pre_run_definitions", {}).items()
+        )
 
         cases = (
-            create_test_case_for_case(filename, config, case)
+            create_test_case_for_case(
+                filename, config, case, pre_run_definitions
+            )
             for case in test_structure['cases']
         )
         tests = [loader.load_case(case) for case in cases]

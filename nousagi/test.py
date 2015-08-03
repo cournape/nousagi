@@ -24,40 +24,10 @@ from .pre_runs import (
 ])
 class Test(object):
     @classmethod
-    def from_json_dict(cls, config, data):
+    def from_json_dict(cls, config, data, pre_runs, post_runs):
         assertions = []
-        pre_runs = []
-        post_runs = []
-
-        commands = {
-            "mkdtemp": Mkdtemp,
-            "write_file": WriteFileFromTemplate,
-        }
-
-        if "pre_runs" in data:
-            for pre_run_data in data["pre_runs"]:
-                if pre_run_data["type"] == "command":
-                    command_klass = commands.get(pre_run_data["command"])
-                    if command_klass is None:
-                        msg = "Unknown command {!r}".format(command_klass)
-                        raise NotImplementedError(msg)
-                    command = command_klass.from_json_dict(pre_run_data)
-
-                    registers_data = pre_run_data.get("register", [])
-
-                    registers = tuple(
-                        RegisterVariable.from_json_dict(register_data)
-                        for register_data in registers_data
-                    )
-
-                    pre_run = Command(command, command.ReturnState, registers)
-                elif pre_run_data["type"] == "env":
-                    pre_run = Env.from_json_dict(pre_run_data)
-                else:
-                    msg = ("Unsupported type of pre run: {!r}".
-                           format(pre_run_data["type"]))
-                    raise NotImplementedError(msg)
-                pre_runs.append(pre_run)
+        pre_runs = pre_runs
+        post_runs = post_runs
 
         if "status" in data:
             assertion = StatusAssertion(
@@ -105,7 +75,6 @@ class Test(object):
         for pre_run in self.pre_runs:
             return_state = pre_run.run(state)
             return_states.append(return_state)
-            pre_run.update(state, return_state)
 
         try:
             self._run_command(case, state)

@@ -80,6 +80,32 @@ class Env(Run):
         state.environ.update(return_state.env)
 
 
+@attributes([Attribute("steps", instance_of=list)])
+class MultiSteps(Run):
+    @attributes(["states"])
+    class ReturnState(object):
+        @classmethod
+        def validate(cls, variable):
+            pass
+
+        def cleanup(self):
+            pass
+
+    def run(self, state):
+        return_states = []
+        for step in self.steps:
+            return_state = step.run(state)
+            step.update(state, return_state)
+            return_states.append(return_state)
+
+        return_state = self.ReturnState(states=return_states)
+        return return_state
+
+    def update(self, state, return_state):
+        for i, step in enumerate(self.steps):
+            step.update(state, return_state.states[i])
+
+
 class Mkdtemp(object):
     @attributes(["path"])
     class ReturnState(object):
@@ -146,3 +172,33 @@ class WriteFileFromTemplate(object):
 
         return_state = self.ReturnState()
         return return_state
+
+
+def pre_run_factory_from_json_dict(data):
+    commands = {
+        "mkdtemp": Mkdtemp,
+        "write_file": WriteFileFromTemplate,
+    }
+
+    if data["type"] == "command":
+        command_klass = commands.get(data["command"])
+        if command_klass is None:
+            msg = "Unknown command {!r}".format(command_klass)
+            raise NotImplementedError(msg)
+        command = command_klass.from_json_dict(data)
+
+        registers_data = data.get("register", [])
+
+        registers = tuple(
+            RegisterVariable.from_json_dict(register_data)
+            for register_data in registers_data
+        )
+
+        pre_run = Command(command, command.ReturnState, registers)
+    elif data["type"] == "env":
+        pre_run = Env.from_json_dict(data)
+    else:
+        msg = ("Unsupported type of pre run: {!r}".format(data["type"]))
+        raise NotImplementedError(msg)
+
+    return pre_run
