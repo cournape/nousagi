@@ -42,6 +42,12 @@ class Test(object):
         pre_runs = pre_runs
         post_runs = post_runs
 
+        generic_assertions_factory = {
+            "regex": RegexOutputAssertion,
+            "startswith": OutputStartswithAssertion,
+            "file": FileExists,
+        }
+
         if "status" in data:
             assertion = StatusAssertion(
                 variables=config.variables, expected=data["status"]
@@ -55,26 +61,14 @@ class Test(object):
 
         if "assertions" in data:
             for assertion_data in data["assertions"]:
-                if assertion_data["type"] == "regex":
-                    assertion = RegexOutputAssertion(
-                        variables=config.variables,
-                        expected=assertion_data["expected"]
-                    )
-                    assertions.append(assertion)
-                elif assertion_data["type"] == "startswith":
-                    assertion = OutputStartswithAssertion(
-                        variables=config.variables,
-                        expected=assertion_data["expected"]
-                    )
-                    assertions.append(assertion)
-                elif assertion_data["type"] == "file":
-                    assertion = FileExists.from_json_dict(
-                        config.variables, assertion_data
-                    )
-                    assertions.append(assertion)
-                else:
+                kind = assertion_data["type"]
+                factory = generic_assertions_factory.get(kind)
+                if factory is None:
                     msg = "Assertion type {0!r} not supported"
                     raise NotImplementedError(msg.format(assertion_data["type"]))
+                else:
+                    assertion = factory.from_json_dict(config.variables, assertion_data)
+                    assertions.append(assertion)
 
         return cls(
             name=data["name"], cmd=data["cmd"], assertions=assertions,
