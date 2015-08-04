@@ -106,6 +106,7 @@ if not is_released:
 
 if __name__ == "__main__":
     install_requires = [
+        'characteristic',
         'haas >= 0.6.0',
         'pyyaml',
         'six',
