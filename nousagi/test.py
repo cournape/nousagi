@@ -5,8 +5,8 @@ import subprocess
 from characteristic import Attribute, attributes
 
 from .assertions import (
-    FileExists, OutputAssertion, OutputStartswithAssertion,
-    RegexOutputAssertion, StatusAssertion
+    CommandAssertion, FileExists, OutputAssertion,
+    OutputStartswithAssertion, RegexOutputAssertion, StatusAssertion
 )
 from .config import Config
 from .pre_runs import State
@@ -43,6 +43,7 @@ class Test(object):
         post_runs = post_runs
 
         generic_assertions_factory = {
+            "command": CommandAssertion,
             "regex": RegexOutputAssertion,
             "startswith": OutputStartswithAssertion,
             "file": FileExists,
