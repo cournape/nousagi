@@ -14,13 +14,15 @@ from .var_loader import VarLoader
 @attributes([
     Attribute("is_enabled", instance_of=bool),
     Attribute("coveragerc", instance_of=str),
+    Attribute("reset", instance_of=bool),
 ])
 class _CoverageConfiguration(object):
     @classmethod
     def from_json_dict(cls, data):
         return cls(
             is_enabled=data.get("enabled", False),
-            coveragerc=data.get("coveragerc", "")
+            coveragerc=data.get("coveragerc", ""),
+            reset=data.get("reset", True),
         )
 
     @property

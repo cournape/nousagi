@@ -1,3 +1,4 @@
+import subprocess
 import sys
 import unittest
 
@@ -122,6 +123,12 @@ class YamlTestLoader(object):
         loader = self._loader
 
         config = Config.from_dict(test_structure.get('config', {}), filename)
+        if config.coverage.is_enabled and config.coverage.reset:
+            cmd = ["coverage", "erase"]
+            if config.coverage.coveragerc:
+                cmd += ["--rcfile", config.coverage.coveragerc]
+            subprocess.check_output(cmd)
+
         pre_run_definitions = dict(
             (name, create_pre_run_set(filename, config, pre_run_set))
             for name, pre_run_set
