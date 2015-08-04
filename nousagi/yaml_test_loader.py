@@ -121,7 +121,7 @@ class YamlTestLoader(object):
         """
         loader = self._loader
 
-        config = Config.from_dict(test_structure['config'], filename)
+        config = Config.from_dict(test_structure.get('config', {}), filename)
         pre_run_definitions = dict(
             (name, create_pre_run_set(filename, config, pre_run_set))
             for name, pre_run_set
