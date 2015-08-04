@@ -6,7 +6,7 @@ import yaml
 
 from .config import Config
 from .pre_runs import MultiSteps, pre_run_factory_from_json_dict
-from .test import Test
+from .test import Scenario, Test
 
 
 TEST_NAME_ATTRIBUTE = 'nousagi_name'
@@ -38,7 +38,11 @@ def create_test_case_for_case(filename, config, case, pre_run_definitions):
     post_runs = []
     tests = [
         Test.from_json_dict(config, spec, pre_runs, post_runs)
-        for spec in case['tests']
+        for spec in case.get('tests', [])
+    ]
+    tests += [
+        Scenario.from_json_dict(config, spec, pre_runs, post_runs)
+        for spec in case.get('scenarios', [])
     ]
     test_count = len(tests)
     class_dict = dict(
