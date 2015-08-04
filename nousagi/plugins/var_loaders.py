@@ -10,6 +10,8 @@ import os
 import os.path
 import subprocess
 
+from nousagi.exceptions import InvalidVariable
+
 from .i_var_loader import IVarLoader
 
 
@@ -30,6 +32,38 @@ class CommandVarLoader(IVarLoader):
             output = subprocess.check_output(self._command, shell=True)
             self._value = output.rstrip()
             self._is_loaded = True
+        return self._is_loaded
+
+    @property
+    def value(self):
+        return self._value
+
+
+class EnvVarLoader(IVarLoader):
+    def __init__(self, name, env_var, raw):
+        super(EnvVarLoader, self).__init__()
+        self.name = name
+        self._raw = raw
+        self._env_var = env_var
+        self._value = None
+        self._is_loaded = False
+
+    @classmethod
+    def from_dict(cls, name, var_dict):
+        return cls(
+            name=name,
+            env_var=var_dict['env'],
+            raw=var_dict,
+        )
+
+    def load(self, filename, variables):
+        if not self._is_loaded:
+            try:
+                self._value = os.environ[self._env_var]
+            except KeyError:
+                raise InvalidVariable(self.name, repr(self._raw))
+            else:
+                self._is_loaded = True
         return self._is_loaded
 
     @property
